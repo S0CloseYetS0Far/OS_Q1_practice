@@ -1,0 +1,1326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Ready Queue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#eef0f7;
+    --surface:#ffffff;
+    --surface-2:#e4e7f2;
+    --border:#d3d7e6;
+    --ink:#14151c;
+    --ink-muted:#5b5f74;
+    --accent:#2c4bd4;
+    --accent-ink:#ffffff;
+    --accent-soft:#e1e6fb;
+    --good:#1f8a4c;
+    --good-soft:#dff3e7;
+    --good-ink:#0d3d21;
+    --bad:#c53434;
+    --bad-soft:#fbe3e3;
+    --bad-ink:#4a1414;
+    --warn:#96690a;
+    --warn-soft:#fbf0d9;
+    --warn-ink:#4a3105;
+    --shadow: 0 1px 2px rgba(20,21,28,.04), 0 8px 24px -12px rgba(20,21,28,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0e1016;
+      --surface:#171a23;
+      --surface-2:#1f2330;
+      --border:#2b2f40;
+      --ink:#e8eaf3;
+      --ink-muted:#9498ac;
+      --accent:#7c93ff;
+      --accent-ink:#0e1016;
+      --accent-soft:#232a4d;
+      --good:#4bcf88;
+      --good-soft:#163527;
+      --good-ink:#bdf4d6;
+      --bad:#ff7a7a;
+      --bad-soft:#3b1c1c;
+      --bad-ink:#ffd3d3;
+      --warn:#e3ac47;
+      --warn-soft:#3a2f14;
+      --warn-ink:#f6dfa8;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e1016;
+    --surface:#171a23;
+    --surface-2:#1f2330;
+    --border:#2b2f40;
+    --ink:#e8eaf3;
+    --ink-muted:#9498ac;
+    --accent:#7c93ff;
+    --accent-ink:#0e1016;
+    --accent-soft:#232a4d;
+    --good:#4bcf88;
+    --good-soft:#163527;
+    --good-ink:#bdf4d6;
+    --bad:#ff7a7a;
+    --bad-soft:#3b1c1c;
+    --bad-ink:#ffd3d3;
+    --warn:#e3ac47;
+    --warn-soft:#3a2f14;
+    --warn-ink:#f6dfa8;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{ font-family:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .wrap{
+    max-width:720px;
+    margin:0 auto;
+    padding:20px 20px 64px;
+  }
+
+  /* ---------- status bar ---------- */
+  .statusbar{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    padding-block:18px 22px;
+    flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:2px;
+    font-family:"IBM Plex Mono", monospace;
+    font-weight:600;
+    font-size:1.15rem;
+    letter-spacing:.01em;
+  }
+  .brand .cursor{
+    display:inline-block;
+    width:.55ch;
+    background:var(--accent);
+    color:var(--accent);
+    margin-left:2px;
+    animation:blink 1.1s steps(1) infinite;
+  }
+  @media (prefers-reduced-motion:reduce){ .brand .cursor{ animation:none; opacity:.6; } }
+  @keyframes blink{ 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+  .brand small{
+    font-weight:400;
+    color:var(--ink-muted);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    margin-left:10px;
+  }
+  .statusbar .stat-row{
+    display:flex;
+    gap:16px;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.78rem;
+    color:var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .statusbar .stat-row b{ color:var(--ink); font-weight:600; }
+
+  /* ---------- deck select screen ---------- */
+  .lede{
+    font-size:.98rem;
+    line-height:1.55;
+    color:var(--ink-muted);
+    max-width:52ch;
+    margin:0 0 26px;
+  }
+  .section-label{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    color:var(--ink-muted);
+    margin:0 0 10px;
+  }
+  .deck-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:28px;
+  }
+  .deck-card{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    width:100%;
+    text-align:left;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px 18px;
+    cursor:pointer;
+    font:inherit;
+    color:inherit;
+    box-shadow:var(--shadow);
+    transition:border-color .15s ease, transform .1s ease;
+  }
+  .deck-card:hover{ border-color:var(--accent); }
+  .deck-card:active{ transform:scale(.995); }
+  .deck-card:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .deck-pid{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.72rem;
+    color:var(--accent);
+    background:var(--accent-soft);
+    border-radius:6px;
+    padding:5px 8px;
+    flex:none;
+    font-variant-numeric: tabular-nums;
+  }
+  .deck-body{ flex:1; min-width:0; }
+  .deck-name{ font-weight:600; font-size:.98rem; margin:0 0 3px; text-wrap:balance; }
+  .deck-meta{ font-size:.8rem; color:var(--ink-muted); margin:0; }
+  .deck-count{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.82rem;
+    color:var(--ink-muted);
+    flex:none;
+    font-variant-numeric: tabular-nums;
+  }
+  .deck-arrow{ color:var(--ink-muted); flex:none; }
+
+  .best-tag{
+    display:inline-block;
+    margin-top:6px;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.7rem;
+    color:var(--good);
+    background:var(--good-soft);
+    padding:2px 7px;
+    border-radius:5px;
+  }
+
+  .footnote{
+    font-size:.78rem;
+    color:var(--ink-muted);
+    line-height:1.6;
+    border-top:1px solid var(--border);
+    padding-top:16px;
+    margin-top:8px;
+  }
+
+  /* ---------- quiz screen ---------- */
+  .quiz-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .quiz-deckname{
+    font-size:.8rem;
+    color:var(--ink-muted);
+  }
+  .quit-btn{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.74rem;
+    background:none;
+    border:1px solid var(--border);
+    color:var(--ink-muted);
+    border-radius:6px;
+    padding:6px 10px;
+    cursor:pointer;
+  }
+  .quit-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .quit-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  .timeline{
+    display:flex;
+    gap:3px;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+  }
+  .seg{
+    flex:1;
+    min-width:6px;
+    height:7px;
+    border-radius:2px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+  }
+  .seg.current{ background:var(--accent); border-color:var(--accent); }
+  .seg.correct{ background:var(--good); border-color:var(--good); }
+  .seg.wrong{ background:var(--bad); border-color:var(--bad); }
+
+  .score-strip{
+    display:flex;
+    gap:18px;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.78rem;
+    color:var(--ink-muted);
+    margin-bottom:18px;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-strip b{ color:var(--ink); }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:26px 26px 22px;
+    box-shadow:var(--shadow);
+  }
+  .card-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:14px;
+  }
+  .qtag{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.72rem;
+    color:var(--ink-muted);
+    text-transform:uppercase;
+    letter-spacing:.1em;
+  }
+  .qprompt{
+    font-size:1.08rem;
+    line-height:1.5;
+    font-weight:500;
+    margin:0 0 18px;
+    text-wrap:balance;
+    white-space:pre-line;
+  }
+  .qcode{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.8rem;
+    line-height:1.55;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:14px 16px;
+    margin:0 0 18px;
+    white-space:pre;
+    overflow-x:auto;
+    color:var(--ink);
+  }
+
+  .options{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .opt{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    width:100%;
+    text-align:left;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:12px 14px;
+    cursor:pointer;
+    font:inherit;
+    font-size:.94rem;
+    color:var(--ink);
+    line-height:1.45;
+    transition:border-color .12s ease, background .12s ease;
+  }
+  .opt:hover:not(:disabled){ border-color:var(--accent); background:var(--accent-soft); }
+  .opt:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .opt:disabled{ cursor:default; }
+  .opt-letter{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.78rem;
+    font-weight:600;
+    color:var(--ink-muted);
+    background:var(--surface-2);
+    border-radius:5px;
+    min-width:22px;
+    height:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:none;
+  }
+  .opt.is-correct{ border-color:var(--good); background:var(--good-soft); }
+  .opt.is-correct .opt-letter{ background:var(--good); color:var(--good-soft); }
+  .opt.is-wrong{ border-color:var(--bad); background:var(--bad-soft); }
+  .opt.is-wrong .opt-letter{ background:var(--bad); color:var(--bad-soft); }
+  .opt-mark{
+    margin-left:auto;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.78rem;
+    flex:none;
+    padding-left:8px;
+  }
+  .opt.is-correct .opt-mark{ color:var(--good); }
+  .opt.is-wrong .opt-mark{ color:var(--bad); }
+
+  .note-box{
+    margin-top:16px;
+    background:var(--warn-soft);
+    border:1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+    color:var(--warn-ink);
+    border-radius:8px;
+    padding:11px 14px;
+    font-size:.83rem;
+    line-height:1.5;
+  }
+  .note-box b{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    display:block;
+    margin-bottom:4px;
+    color:var(--warn);
+  }
+
+  .card-foot{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:22px;
+  }
+  .next-btn{
+    font-family:"IBM Plex Sans", sans-serif;
+    font-weight:600;
+    font-size:.92rem;
+    background:var(--accent);
+    color:var(--accent-ink);
+    border:none;
+    border-radius:8px;
+    padding:11px 20px;
+    cursor:pointer;
+  }
+  .next-btn:hover{ filter:brightness(1.06); }
+  .next-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; }
+  .next-btn:disabled{ opacity:.35; cursor:default; }
+
+  /* ---------- summary screen ---------- */
+  .summary-hero{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:30px 26px;
+    box-shadow:var(--shadow);
+    margin-bottom:24px;
+    text-align:center;
+  }
+  .exit-code{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.76rem;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    color:var(--ink-muted);
+    margin-bottom:10px;
+  }
+  .big-score{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:3rem;
+    font-weight:600;
+    line-height:1;
+    font-variant-numeric: tabular-nums;
+    margin-bottom:6px;
+  }
+  .big-score span{ font-size:1.4rem; color:var(--ink-muted); font-weight:500; }
+  .accuracy-line{ color:var(--ink-muted); font-size:.9rem; margin-bottom:22px; }
+  .summary-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .btn-secondary{
+    font-family:"IBM Plex Sans", sans-serif;
+    font-weight:600;
+    font-size:.88rem;
+    background:none;
+    color:var(--ink);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 18px;
+    cursor:pointer;
+  }
+  .btn-secondary:hover{ border-color:var(--accent); color:var(--accent); }
+  .btn-secondary:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  .log-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .log-row{
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-left:3px solid var(--border);
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:.86rem;
+    line-height:1.5;
+  }
+  .log-row.ok{ border-left-color:var(--good); }
+  .log-row.no{ border-left-color:var(--bad); }
+  .log-idx{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.74rem;
+    color:var(--ink-muted);
+    flex:none;
+    padding-top:1px;
+    min-width:2.2ch;
+  }
+  .log-body{ flex:1; min-width:0; }
+  .log-q{ margin:0 0 4px; color:var(--ink); }
+  .log-ans{ margin:0; font-size:.8rem; color:var(--ink-muted); }
+  .log-ans b{ color:var(--good); }
+  .log-ans .wrong-said{ color:var(--bad); }
+
+  @media (max-width:520px){
+    .big-score{ font-size:2.3rem; }
+    .card{ padding:20px 18px 18px; }
+    .statusbar{ padding-block:14px 18px; }
+  }
+  [hidden]{display:none!important;}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <div class="statusbar">
+    <div class="brand">READY_QUEUE<span class="cursor">&nbsp;</span><small>os quiz</small></div>
+    <div class="stat-row" id="statusStats"></div>
+  </div>
+
+  <!-- ============ SCREEN 1: deck select ============ -->
+  <section id="screen-select">
+    <p class="lede">Three real Operating Systems quizzes, turned into a self-test. Pick a program to load — each question runs like a process through the scheduler: answer it, see the verdict, move to the next.</p>
+    <p class="section-label">load a program</p>
+    <div class="deck-list" id="deckList"></div>
+    <p class="footnote">Every answer here was independently re-checked against standard OS-course material, not just copied from a prior attempt — one question (device-controller role, Set 2) was corrected from the original pick. Your best score per deck is kept on this device only.</p>
+  </section>
+
+  <!-- ============ SCREEN 2: quiz ============ -->
+  <section id="screen-quiz" hidden>
+    <div class="quiz-head">
+      <div class="quiz-deckname mono" id="quizDeckName"></div>
+      <button class="quit-btn" id="quitBtn" type="button">&larr; change deck</button>
+    </div>
+    <div class="timeline" id="timeline"></div>
+    <div class="score-strip">
+      <span>score <b id="scoreNow">0</b>/<span id="scoreTotal">0</span></span>
+      <span>question <b id="qPos">1</b>/<span id="qTotal">1</span></span>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="qtag" id="qtag">QUESTION 01</span>
+      </div>
+      <p class="qprompt" id="qprompt"></p>
+      <pre class="qcode" id="qcode" hidden></pre>
+      <div class="options" id="options"></div>
+      <div class="note-box" id="noteBox" hidden>
+        <b>note</b>
+        <span id="noteText"></span>
+      </div>
+      <div class="card-foot">
+        <button class="next-btn" id="nextBtn" type="button" disabled>Next &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 3: summary ============ -->
+  <section id="screen-summary" hidden>
+    <div class="summary-hero">
+      <div class="exit-code" id="summaryDeckName">session complete</div>
+      <div class="big-score"><span id="finalScore">0</span><span id="finalTotalWrap">&nbsp;/&nbsp;<span id="finalTotal">0</span></span></div>
+      <div class="accuracy-line" id="accuracyLine"></div>
+      <div class="summary-actions">
+        <button class="next-btn" id="retryBtn" type="button">Run again</button>
+        <button class="btn-secondary" id="backBtn" type="button">Choose another deck</button>
+      </div>
+    </div>
+    <p class="section-label">session log</p>
+    <div class="log-list" id="logList"></div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================== DATA ============================== */
+
+const FILE1 = {
+  id: "haifa",
+  name: "Dr. Haifa — Quiz 1",
+  meta: "3rd Semester 2024 · originally an instructor-marked key",
+  questions: [
+    {
+      q: `Select of the below MCs, to fill-in the blanks with the appropriate terms sequentially:
+Interrupt transfers control to the interrupt ____, through the interrupt ____, which contains the addresses of all the ____.`,
+      options: [
+        "service routine – interrupt vector – service routines",
+        "interrupt vector – service routine – service routines",
+        "hardware – software – user",
+        "software – hardware – user",
+      ],
+      correct: 0,
+    },
+    {
+      q: `A trap or exception is:`,
+      options: [
+        "a software-generated interrupt caused either by an error or a user request.",
+        "a hardware-generated interrupt caused either by an error or a user request.",
+        "an instruction generated by device driver that informs CPU that it has finished its operation.",
+        "an instruction generated by device controller that informs CPU that it has finished its operation.",
+      ],
+      correct: 0,
+    },
+    {
+      q: `Utilized by the operating system to safeguard itself and other system components:`,
+      options: ["Caching operation.", "Multimode operation.", "Buffering operation.", "Dual-mode operation."],
+      correct: 3,
+    },
+    {
+      q: `Which of the following is INCORRECT for parent–child resource sharing options?`,
+      options: [
+        "Parent share subset of child's resources.",
+        "Share all resources.",
+        "Child share subset of parent's resources.",
+        "Share no resources.",
+      ],
+      correct: 0,
+      note: "The real model only ever lets a child share a subset of the parent's resources — never the reverse — so (a) is the option that doesn't actually exist.",
+    },
+    {
+      q: `Select the possible output of the below program:`,
+      code: `#define MAX_COUNT 2
+#define BUF_SIZE 5
+
+void main(void) {
+  pid_t pid;
+  int i;
+  char buf[BUF_SIZE];
+  pid = fork();
+
+  for (i = 1; i <= MAX_COUNT; i++) {
+    if (pid == 0)
+      printf("This line has value = %d \\n", i*2);
+    else
+      printf("This line has value = %d \\n", i);
+    printf(buf);
+    ...
+  }
+}`,
+      options: [
+        "value = 1, 2, 4, 8, 16  then  value = 1, 2, 3, 4, 5",
+        "value = 1, 2, 3, 4, 5",
+        "value = 1, 2, 2, 4",
+        "value = 1, 2, 2, 4 (reordered)",
+      ],
+      correct: 0,
+      note: "Kept as marked in the instructor's own answer key for this file.",
+    },
+  ],
+};
+
+const FILE2 = {
+  id: "set2",
+  name: "Quiz 1 — Set 2",
+  meta: "1st semester 2024 · re-verified from a student attempt",
+  questions: [
+    {
+      q: "Which of the following allow several unrelated processes to communicate together?",
+      options: ["anonymous pipe", "named pipe", "FIFO Queue", "LIFO Queue"],
+      correct: 1,
+    },
+    {
+      q: "A process control block ----------------",
+      options: [
+        "determines which process is to be executed next",
+        "stores the address of the next instruction to be processed by a different process",
+        "includes information on the process's state",
+        "All the mentioned",
+      ],
+      correct: 3,
+    },
+    {
+      q: "In any computer system, which of the following statements is true?",
+      options: [
+        "None of above",
+        "Shared memory is typically faster than message passing.",
+        "Message passing is most useful for exchanging large amounts of data.",
+        "Message passing is typically faster than shared memory.",
+      ],
+      correct: 1,
+    },
+    {
+      q: "The list of processes waiting for a particular I/O device is called a(n) ____.",
+      options: ["Standby Queue", "Interrupt Queue", "Ready Queue", "Waiting Queue"],
+      correct: 3,
+    },
+    {
+      q: "Which of the following systems are used to allow execution of processes while it is not completely in memory?",
+      options: ["MultiProgramming", "CPU Scheduling", "Virtual Memory", "Multitasking"],
+      correct: 2,
+    },
+    {
+      q: "What is the role of protection in operating systems?",
+      options: [
+        "All of above",
+        "to protect the system from external attacks.",
+        "to protect the system from internal attacks.",
+        "controlling the access of processes or users to the resources of the computer system",
+      ],
+      correct: 3,
+    },
+    {
+      q: "Which system is suitable with operating systems that provide no user interface and run primarily without user intervention?",
+      options: ["Embedded Systems", "Servers", "Personal Computer System", "Mobile Devices"],
+      correct: 0,
+    },
+    {
+      q: "The word ----------- is used to indicate that a bootstrap program is permanently held in ROM (read only memory), as opposed to being held in secondary storage.",
+      options: ["Firmware", "Hardware", "Software", "Shareware"],
+      correct: 0,
+    },
+    {
+      q: "Why is main memory not suitable for backup purposes?",
+      options: [
+        "Because memory is permanent storage device",
+        "Because memory is a dynamic storage device",
+        "Because memory is non-volatile",
+        "Because memory is volatile",
+      ],
+      correct: 3,
+    },
+    {
+      q: "What would happen if a programmer calls exec() before the fork() system call?",
+      options: [
+        "None of the mentioned",
+        "no new child process is created and the running program will be the one defined by the exec() system call",
+        "A new child process is created and runs the new program defined by exec()",
+        "A new duplicate child process is created",
+      ],
+      correct: 1,
+    },
+    {
+      q: "The device-status table contains ____.",
+      options: ["each I/O device type", "each I/O device status", "each I/O device address", "All of the mentioned"],
+      correct: 3,
+    },
+    {
+      q: "Which of the following parameters are considered important design issues for cache memory?",
+      options: [
+        "power consumption and reusability",
+        "size and replacement policy",
+        "speed and volatility",
+        "size and access privileges",
+      ],
+      correct: 1,
+    },
+    {
+      q: "What role do device controllers play in a computer system?",
+      options: [
+        "The device controller is in charge of copying data from the device local buffer to the ROM.",
+        "All of the mentioned",
+        "Device controller acts as a special purpose CPU",
+        "The device controller is in charge of storing the data related to the I/O devices",
+      ],
+      correct: 2,
+      note: "The original attempt picked “All of the mentioned,” but that bundle includes a false claim — a controller copies data to main memory, not to ROM — so it can't be right. A device controller is best described as a special-purpose CPU dedicated to one device type.",
+    },
+    {
+      q: "____ is a set of software frameworks that provide additional services to application developers.",
+      options: ["Cloud computing", "Middleware", "System programs", "Virtualization"],
+      correct: 1,
+    },
+    {
+      q: "When a child process is created, which of the following is NOT true about the execution or address space of the child process?",
+      options: [
+        "Parent processes should run and terminate before the child processes",
+        "The child process runs concurrently with the parent",
+        "The child is a duplicate of the parent",
+        "The child process has a new program loaded into it",
+      ],
+      correct: 0,
+    },
+    {
+      q: `____ describes this statement: "Switching the CPU to another process requires performing a state save of the current process and a state restore of a new process."`,
+      options: ["Processes exchange", "Context Switch", "Context Exchange", "Process Switch"],
+      correct: 1,
+    },
+  ],
+};
+
+const FILE3 = {
+  id: "sohail",
+  name: "Dr. Sohail — Summer 2024",
+  meta: "Re-verified across several retakes of the same quiz",
+  questions: [
+    {
+      q: "In ________ paradigm for cooperating processes, producer process produces information that is consumed by a consumer process, assumes that there is a fixed buffer size.",
+      options: ["Unbounded buffer", "Bounded buffer", "Producer bounder buffer", "Producer unbounded buffer", "Consumer bounder buffer", "Consumer unbounded buffer"],
+      correct: 1,
+    },
+    {
+      q: "After I/O starts, control returns to user program only upon I/O completion. This I/O structure is called",
+      options: ["Synchronous", "Asynchronous", "I/O Burst", "CPU Burst", "None of the above"],
+      correct: 0,
+    },
+    {
+      q: "________ is passive entity stored on disk (executable file); and ________ is an active entity",
+      options: ["Program, Process", "Process, Program", "Process, Thread", "Thread, Process", "Program, Thread"],
+      correct: 0,
+    },
+    {
+      q: "When the CPU jumps its state from one process to the other process, this scenario is technically called",
+      options: ["State Switch", "Process Switch", "Context Switch", "PCB Switch", "Block Switch"],
+      correct: 2,
+    },
+    {
+      q: "Huge range, including denial-of-service, worms, viruses, identity theft, theft of service are examples of",
+      options: ["Security", "Protection", "Confidential", "privileged escalation"],
+      correct: 0,
+    },
+    {
+      q: "Defense of the system against internal and external attacks is called",
+      options: ["Security", "Protection", "Confidential", "privileged escalation"],
+      correct: 0,
+    },
+    {
+      q: "In Asymmetric clustering",
+      options: [
+        "One node running applications, monitoring other nodes",
+        "Multiple machines in hot-standby mode",
+        "Multiple nodes running applications, monitoring each other",
+        "One machine in hot-standby mode",
+      ],
+      correct: 3,
+    },
+    {
+      q: "Which of the following options is an example of a System Call?",
+      options: ["Wait()", "Abort()", "Fork()", "Exit()", "All of the above", "None of the above"],
+      correct: 4,
+    },
+    {
+      q: "Which of the following statements is true?",
+      options: [
+        "Cache has smaller storage capacity than Register",
+        "Register has smaller storage capacity than Cache",
+        "Both are true",
+        "Both are false",
+      ],
+      correct: 1,
+    },
+    {
+      q: "Which of the following statements is true? (speed)",
+      options: ["Cache is faster than Register", "Register is faster than Cache", "Both are true", "Both are false"],
+      correct: 1,
+    },
+    {
+      q: "After I/O starts, control returns to user program without waiting for I/O completion. This I/O structure is called",
+      options: ["Synchronous", "Asynchronous", "I/O Burst", "CPU Burst", "None of the above"],
+      correct: 1,
+    },
+    {
+      q: "If no parent is waiting (did not invoke wait()), a terminated process is a",
+      options: ["cascading termination", "zombie", "Orphan", "Renderer", "Process Termination", "Sandbox"],
+      correct: 1,
+    },
+    {
+      q: "In Asymmetric Multiprocessing",
+      options: [
+        "All processors are assigned a specific task",
+        "All processors perform a specific task",
+        "Each processor is assigned a specific task",
+        "Each processor performs all tasks",
+        "None of the above",
+      ],
+      correct: 2,
+    },
+    {
+      q: "Cooperating processes need interprocess communication (IPC) that is of two models",
+      options: [
+        "Independent or non-cooperating",
+        "Modularity and Convenience",
+        "Shared memory and Message passing",
+        "Synchronous and Asynchronous",
+        "Bounded and Unbounded",
+      ],
+      correct: 2,
+    },
+    {
+      q: "Pipes act as a conduit allowing two processes to communicate. They are mainly of two types, Named pipes and Ordinary Pipes. About named pipes:",
+      options: [
+        "Can be accessed without a parent-child relationship",
+        "It's bidirectional",
+        "Provided on both UNIX and Windows systems",
+        "Named Pipes are more powerful than ordinary pipes",
+        "All of the above",
+        "None of the above",
+      ],
+      correct: 4,
+    },
+    {
+      q: "Considering the memory layout for the process, memory dynamically allocated during run time is in",
+      options: ["Text Section", "Stack", "Data Section", "Heap", "Program Counter"],
+      correct: 3,
+    },
+    {
+      q: "Considering the memory layout for the process, function parameters, return addresses, local variables are placed in",
+      options: ["Text Section", "Stack", "Data Section", "Heap", "Program Counter"],
+      correct: 1,
+    },
+    {
+      q: "Considering the memory layout for the process, global variables are placed in",
+      options: ["Text Section", "Stack", "Data Section", "Heap", "Program Counter"],
+      correct: 2,
+    },
+    {
+      q: "________ loaded at power-up or reboot",
+      options: ["Firmware", "Software", "Kernel", "Operating System", "Middleware"],
+      correct: 0,
+    },
+    {
+      q: "Processes within a system may be __________ or __________",
+      options: [
+        "Dependent or cooperating",
+        "Independent or non-cooperating",
+        "Dependent or non-cooperating",
+        "Independent or cooperating",
+        "None of the above",
+      ],
+      correct: 3,
+    },
+    {
+      q: "Operating System also acts as",
+      options: [
+        "Resource Allocator",
+        "Control Program",
+        "Kernal",
+        "Resource Allocator and Control Program",
+        "Resource Allocator and Control Program and Kernal",
+      ],
+      correct: 3,
+    },
+    {
+      q: "Information associated with each process is placed in",
+      options: ["Task Control Block", "Thread Control Block", "Program Control Block", "Application Control Block", "Active Control Block"],
+      correct: 0,
+      note: "This course's term for the PCB — mirrors how Linux internally calls its process descriptor a task_struct.",
+    },
+    {
+      q: "Program in execution is called",
+      options: ["Thread", "Process", "Kernel", "Driver", "System Call"],
+      correct: 1,
+    },
+    {
+      q: "Multiprocess environment: among 3 different types of processes in Google Chrome Browser, ________ process serves web pages, deals with HTML, Javascript.",
+      options: ["Browser", "Renderer", "Sandbox", "Plug-in", "Process"],
+      correct: 1,
+    },
+    {
+      q: "Multiprocess environment: among 3 different types of processes in Google Chrome Browser, ________ process manages user interface, disk and network I/O.",
+      options: ["Browser", "Renderer", "Sandbox", "Plug-in", "Process"],
+      correct: 0,
+    },
+    {
+      q: "Following types of storage are managed by the Operating System",
+      options: [
+        "Main memory, Solid-state disk and Magnetic disk",
+        "Register, Cache and Main memory",
+        "Main memory, Solid-state disk and Register",
+        "Main memory, Cache and Magnetic disk",
+        "Cache, Solid-state disk and Register",
+      ],
+      correct: 0,
+      note: "Matches the textbook's “Storage Structure” grouping — Main Memory / Solid-State Disks / Magnetic Disks. Cache is covered separately, not grouped with these three.",
+    },
+    {
+      q: "Which of the following statements is true? (disk surface structure)",
+      options: [
+        "Disk surface is logically divided into sectors, which are subdivided into tracks",
+        "Disk surface is logically divided into tracks, which are subdivided into sectors",
+        "Disk surface is physically divided into sectors, which are subdivided into tracks",
+        "Disk surface is physically divided into tracks, which are subdivided into sectors",
+      ],
+      correct: 1,
+      note: "This is the exact textbook phrasing (Silberschatz, Mass-Storage Structure chapter) — tracks/sectors are described as a logical division of the surface.",
+    },
+    {
+      q: "In message passing model of Cooperating processes, IPC may be blocking or non-blocking, or combinations of both. If both send and receive are blocking, we have a __________.",
+      options: ["anonymous (State)", "Renderer (State)", "rendezvous (State)", "Zombie (State)", "Cascade (State)"],
+      correct: 2,
+    },
+    {
+      q: "In message passing model of Cooperating processes, IPC may be blocking or non-blocking. __________ is considered asynchronous and __________ is considered synchronous.",
+      options: [
+        "Non-blocking, blocking",
+        "Blocking, non-blocking",
+        "Bounded non-blocking, unbounded blocking",
+        "Bounded blocking, unbounded non-blocking",
+        "None of the above",
+      ],
+      correct: 0,
+    },
+  ],
+};
+
+const DECKS = [FILE1, FILE2, FILE3];
+const ALL_DECK = {
+  id: "all",
+  name: "Full Queue — everything",
+  meta: "All three quizzes back to back",
+  questions: [].concat(FILE1.questions, FILE2.questions, FILE3.questions),
+};
+
+/* ============================== STATE ============================== */
+
+let state = null; // { deck, order:[idx...], pos, score, answers:[{picked, correct}] }
+
+const els = {
+  statusStats: document.getElementById("statusStats"),
+  screenSelect: document.getElementById("screen-select"),
+  screenQuiz: document.getElementById("screen-quiz"),
+  screenSummary: document.getElementById("screen-summary"),
+  deckList: document.getElementById("deckList"),
+  quizDeckName: document.getElementById("quizDeckName"),
+  quitBtn: document.getElementById("quitBtn"),
+  timeline: document.getElementById("timeline"),
+  scoreNow: document.getElementById("scoreNow"),
+  scoreTotal: document.getElementById("scoreTotal"),
+  qPos: document.getElementById("qPos"),
+  qTotal: document.getElementById("qTotal"),
+  qtag: document.getElementById("qtag"),
+  qprompt: document.getElementById("qprompt"),
+  qcode: document.getElementById("qcode"),
+  options: document.getElementById("options"),
+  noteBox: document.getElementById("noteBox"),
+  noteText: document.getElementById("noteText"),
+  nextBtn: document.getElementById("nextBtn"),
+  summaryDeckName: document.getElementById("summaryDeckName"),
+  finalScore: document.getElementById("finalScore"),
+  finalTotal: document.getElementById("finalTotal"),
+  accuracyLine: document.getElementById("accuracyLine"),
+  retryBtn: document.getElementById("retryBtn"),
+  backBtn: document.getElementById("backBtn"),
+  logList: document.getElementById("logList"),
+};
+
+const LETTERS = "abcdefgh";
+
+function safeGet(key){
+  try{ return localStorage.getItem(key); }catch(e){ return null; }
+}
+function safeSet(key, val){
+  try{ localStorage.setItem(key, val); }catch(e){ /* ignore */ }
+}
+
+function bestScoreFor(deckId){
+  const raw = safeGet("rq_best_" + deckId);
+  return raw ? JSON.parse(raw) : null;
+}
+function maybeSaveBest(deckId, score, total){
+  const prev = bestScoreFor(deckId);
+  if (!prev || score > prev.score) {
+    safeSet("rq_best_" + deckId, JSON.stringify({ score, total }));
+  }
+}
+
+/* ============================== RENDER: select screen ============================== */
+
+function renderDeckList(){
+  const allDecks = DECKS.concat([ALL_DECK]);
+  els.deckList.innerHTML = "";
+  allDecks.forEach((deck, i) => {
+    const btn = document.createElement("button");
+    btn.className = "deck-card";
+    btn.type = "button";
+    btn.setAttribute("data-deck-id", deck.id);
+
+    const pid = document.createElement("span");
+    pid.className = "deck-pid mono";
+    pid.textContent = "PID " + String(i + 1).padStart(2, "0");
+
+    const body = document.createElement("span");
+    body.className = "deck-body";
+    const name = document.createElement("span");
+    name.className = "deck-name";
+    name.textContent = deck.name;
+    const meta = document.createElement("span");
+    meta.className = "deck-meta";
+    meta.textContent = deck.meta;
+    body.appendChild(name);
+    body.appendChild(document.createElement("br"));
+    body.appendChild(meta);
+
+    const best = bestScoreFor(deck.id);
+    if (best) {
+      const tag = document.createElement("span");
+      tag.className = "best-tag mono";
+      tag.textContent = "best " + best.score + "/" + best.total;
+      body.appendChild(document.createElement("br"));
+      body.appendChild(tag);
+    }
+
+    const count = document.createElement("span");
+    count.className = "deck-count mono";
+    count.textContent = deck.questions.length + " q";
+
+    const arrow = document.createElement("span");
+    arrow.className = "deck-arrow";
+    arrow.textContent = "→";
+
+    btn.appendChild(pid);
+    btn.appendChild(body);
+    btn.appendChild(count);
+    btn.appendChild(arrow);
+
+    btn.addEventListener("click", () => startDeck(deck));
+    els.deckList.appendChild(btn);
+  });
+}
+
+function updateStatusStats(){
+  const total = FILE1.questions.length + FILE2.questions.length + FILE3.questions.length;
+  els.statusStats.innerHTML =
+    '<span>decks <b>3</b></span><span>questions <b>' + total + '</b></span>';
+}
+
+/* ============================== SCREEN SWITCH ============================== */
+
+function showScreen(name){
+  els.screenSelect.hidden = name !== "select";
+  els.screenQuiz.hidden = name !== "quiz";
+  els.screenSummary.hidden = name !== "summary";
+  window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+}
+
+/* ============================== QUIZ FLOW ============================== */
+
+function startDeck(deck){
+  state = {
+    deck,
+    order: deck.questions.map((_, i) => i),
+    pos: 0,
+    score: 0,
+    answers: new Array(deck.questions.length).fill(null),
+  };
+  els.quizDeckName.textContent = deck.name;
+  showScreen("quiz");
+  renderTimeline();
+  renderQuestion();
+}
+
+function renderTimeline(){
+  els.timeline.innerHTML = "";
+  state.deck.questions.forEach((_, i) => {
+    const seg = document.createElement("div");
+    seg.className = "seg";
+    const ans = state.answers[i];
+    if (ans) {
+      seg.classList.add(ans.correct ? "correct" : "wrong");
+    } else if (i === state.pos) {
+      seg.classList.add("current");
+    }
+    els.timeline.appendChild(seg);
+  });
+}
+
+function renderQuestion(){
+  const q = state.deck.questions[state.pos];
+  const total = state.deck.questions.length;
+
+  els.qtag.textContent = "QUESTION " + String(state.pos + 1).padStart(2, "0");
+  els.qprompt.textContent = q.q;
+
+  if (q.code) {
+    els.qcode.textContent = q.code;
+    els.qcode.hidden = false;
+  } else {
+    els.qcode.hidden = true;
+  }
+
+  els.scoreNow.textContent = state.score;
+  els.scoreTotal.textContent = total;
+  els.qPos.textContent = state.pos + 1;
+  els.qTotal.textContent = total;
+
+  els.options.innerHTML = "";
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement("button");
+    btn.className = "opt";
+    btn.type = "button";
+
+    const letter = document.createElement("span");
+    letter.className = "opt-letter";
+    letter.textContent = LETTERS[i];
+
+    const text = document.createElement("span");
+    text.textContent = opt;
+    text.style.flex = "1";
+
+    btn.appendChild(letter);
+    btn.appendChild(text);
+    btn.addEventListener("click", () => selectOption(i));
+    els.options.appendChild(btn);
+  });
+
+  els.noteBox.hidden = true;
+  els.nextBtn.disabled = true;
+  els.nextBtn.textContent = state.pos === total - 1 ? "Finish →" : "Next →";
+
+  const existing = state.answers[state.pos];
+  if (existing) {
+    lockOptions(existing.picked);
+  }
+}
+
+function selectOption(i){
+  if (state.answers[state.pos]) return; // already answered
+  const q = state.deck.questions[state.pos];
+  const correct = i === q.correct;
+  state.answers[state.pos] = { picked: i, correct };
+  if (correct) state.score++;
+
+  lockOptions(i);
+  renderTimeline();
+  els.scoreNow.textContent = state.score;
+  els.nextBtn.disabled = false;
+
+  if (q.note) {
+    els.noteText.textContent = q.note;
+    els.noteBox.hidden = false;
+  }
+}
+
+function lockOptions(pickedIdx){
+  const q = state.deck.questions[state.pos];
+  const buttons = els.options.querySelectorAll(".opt");
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) {
+      btn.classList.add("is-correct");
+      const mark = document.createElement("span");
+      mark.className = "opt-mark";
+      mark.textContent = "correct";
+      btn.appendChild(mark);
+    } else if (i === pickedIdx) {
+      btn.classList.add("is-wrong");
+      const mark = document.createElement("span");
+      mark.className = "opt-mark";
+      mark.textContent = "your pick";
+      btn.appendChild(mark);
+    }
+  });
+  if (q.note) {
+    els.noteText.textContent = q.note;
+    els.noteBox.hidden = false;
+  }
+}
+
+els.nextBtn.addEventListener("click", () => {
+  const total = state.deck.questions.length;
+  if (state.pos < total - 1) {
+    state.pos++;
+    renderTimeline();
+    renderQuestion();
+  } else {
+    finishQuiz();
+  }
+});
+
+els.quitBtn.addEventListener("click", () => {
+  state = null;
+  renderDeckList();
+  showScreen("select");
+});
+
+function finishQuiz(){
+  const total = state.deck.questions.length;
+  maybeSaveBest(state.deck.id, state.score, total);
+
+  els.summaryDeckName.textContent = state.deck.name + " — session complete";
+  els.finalScore.textContent = state.score;
+  els.finalTotal.textContent = total;
+  const pct = Math.round((state.score / total) * 100);
+  els.accuracyLine.textContent = pct + "% correct";
+
+  els.logList.innerHTML = "";
+  state.deck.questions.forEach((q, i) => {
+    const ans = state.answers[i];
+    const row = document.createElement("div");
+    row.className = "log-row " + (ans && ans.correct ? "ok" : "no");
+
+    const idx = document.createElement("span");
+    idx.className = "log-idx mono";
+    idx.textContent = "Q" + String(i + 1).padStart(2, "0");
+
+    const body = document.createElement("span");
+    body.className = "log-body";
+
+    const qtext = document.createElement("p");
+    qtext.className = "log-q";
+    qtext.textContent = q.q.split("\n")[0];
+
+    const ansText = document.createElement("p");
+    ansText.className = "log-ans";
+    if (ans && ans.correct) {
+      ansText.innerHTML = "correct — <b>" + escapeHtml(LETTERS[q.correct] + ". " + q.options[q.correct]) + "</b>";
+    } else if (ans) {
+      ansText.innerHTML =
+        "you picked <span class=\"wrong-said\">" + escapeHtml(LETTERS[ans.picked] + ". " + q.options[ans.picked]) +
+        "</span> — correct is <b>" + escapeHtml(LETTERS[q.correct] + ". " + q.options[q.correct]) + "</b>";
+    } else {
+      ansText.innerHTML = "skipped — correct is <b>" + escapeHtml(LETTERS[q.correct] + ". " + q.options[q.correct]) + "</b>";
+    }
+
+    body.appendChild(qtext);
+    body.appendChild(ansText);
+    row.appendChild(idx);
+    row.appendChild(body);
+    els.logList.appendChild(row);
+  });
+
+  showScreen("summary");
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+els.retryBtn.addEventListener("click", () => {
+  startDeck(state.deck);
+});
+els.backBtn.addEventListener("click", () => {
+  const d = state.deck;
+  state = null;
+  renderDeckList();
+  showScreen("select");
+});
+
+/* ============================== INIT ============================== */
+
+updateStatusStats();
+renderDeckList();
+showScreen("select");
+
+})();
+</script>
+</body>
+</html>
