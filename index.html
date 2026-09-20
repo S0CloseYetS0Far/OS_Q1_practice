@@ -391,6 +391,13 @@
     color:var(--warn);
   }
 
+  .ref-line{
+    margin-top:14px;
+    font-size:.72rem;
+    letter-spacing:.04em;
+    color:var(--ink-muted);
+  }
+
   .card-foot{
     display:flex;
     justify-content:flex-end;
@@ -509,7 +516,7 @@
     <p class="lede">Three real Operating Systems quizzes, turned into a self-test. Pick a program to load — each question runs like a process through the scheduler: answer it, see the verdict, move to the next.</p>
     <p class="section-label">load a program</p>
     <div class="deck-list" id="deckList"></div>
-    <p class="footnote">Every answer here was independently re-checked against standard OS-course material, not just copied from a prior attempt — one question (device-controller role, Set 2) was corrected from the original pick. Your best score per deck is kept on this device only.</p>
+    <p class="footnote">Every answer is checked against the Chapter 1 and Chapter 3 slides, and each question shows its slide number once you answer. The source screenshots were student attempts, not an official key, and three of their picks were changed after checking the slides. Your best score per deck is kept on this device only.</p>
   </section>
 
   <!-- ============ SCREEN 2: quiz ============ -->
@@ -535,6 +542,7 @@
         <b>note</b>
         <span id="noteText"></span>
       </div>
+      <div class="ref-line mono" id="refLine" hidden></div>
       <div class="card-foot">
         <button class="next-btn" id="nextBtn" type="button" disabled>Next &rarr;</button>
       </div>
@@ -567,7 +575,7 @@
 const FILE1 = {
   id: "haifa",
   name: "Dr. Haifa — Quiz 1",
-  meta: "3rd Semester 2024 · originally an instructor-marked key",
+  meta: "3rd semester 2024 · checked against the ch1 and ch3 slides",
   questions: [
     {
       q: `Select of the below MCs, to fill-in the blanks with the appropriate terms sequentially:
@@ -630,10 +638,10 @@ void main(void) {
         "value = 1, 2, 4, 8, 16  then  value = 1, 2, 3, 4, 5",
         "value = 1, 2, 3, 4, 5",
         "value = 1, 2, 2, 4",
-        "value = 1, 2, 2, 4 (reordered)",
+        "value = 1, 2, 2, 4 … (last line is cut off in the source screenshot)",
       ],
-      correct: 0,
-      note: "Kept as marked in the instructor's own answer key for this file.",
+      correct: 2,
+      note: "After fork() both processes run the whole loop. The parent prints i (1, 2) and the child prints i*2 (2, 4), so the program prints 4 lines and one possible order is 1, 2, 2, 4. Options a and b need 5 or more lines, which MAX_COUNT = 2 cannot produce. The uninitialised printf(buf) is ignored. Option d is cut off in the source screenshot, so c is the answer.",
     },
   ],
 };
@@ -641,7 +649,7 @@ void main(void) {
 const FILE2 = {
   id: "set2",
   name: "Quiz 1 — Set 2",
-  meta: "1st semester 2024 · re-verified from a student attempt",
+  meta: "1st semester 2024 · checked against the ch1 and ch3 slides",
   questions: [
     {
       q: "Which of the following allow several unrelated processes to communicate together?",
@@ -656,7 +664,8 @@ const FILE2 = {
         "includes information on the process's state",
         "All the mentioned",
       ],
-      correct: 3,
+      correct: 2,
+      note: "The PCB holds a process's own state, program counter, registers, scheduling info and so on (slide 3.10). It does not decide which process runs next (the scheduler does), and its program counter belongs to the same process, not a different one. So “All the mentioned” is wrong.",
     },
     {
       q: "In any computer system, which of the following statements is true?",
@@ -741,8 +750,8 @@ const FILE2 = {
         "Device controller acts as a special purpose CPU",
         "The device controller is in charge of storing the data related to the I/O devices",
       ],
-      correct: 2,
-      note: "The original attempt picked “All of the mentioned,” but that bundle includes a false claim — a controller copies data to main memory, not to ROM — so it can't be right. A device controller is best described as a special-purpose CPU dedicated to one device type.",
+      correct: 3,
+      note: "Slide 1.9: each controller is in charge of one device type and has a local buffer where the device's data is held. “All of the mentioned” fails because data goes to main memory, not ROM. “Special purpose CPU” isn't in the course slides. This one is the best fit rather than a verbatim slide line.",
     },
     {
       q: "____ is a set of software frameworks that provide additional services to application developers.",
@@ -770,7 +779,7 @@ const FILE2 = {
 const FILE3 = {
   id: "sohail",
   name: "Dr. Sohail — Summer 2024",
-  meta: "Re-verified across several retakes of the same quiz",
+  meta: "Summer 2024 · checked against the ch1 and ch3 slides",
   questions: [
     {
       q: "In ________ paradigm for cooperating processes, producer process produces information that is consumed by a consumer process, assumes that there is a fixed buffer size.",
@@ -922,7 +931,7 @@ const FILE3 = {
       q: "Information associated with each process is placed in",
       options: ["Task Control Block", "Thread Control Block", "Program Control Block", "Application Control Block", "Active Control Block"],
       correct: 0,
-      note: "This course's term for the PCB — mirrors how Linux internally calls its process descriptor a task_struct.",
+      note: "Slide 3.10: the PCB is “information associated with each process (also called task control block).”",
     },
     {
       q: "Program in execution is called",
@@ -949,7 +958,7 @@ const FILE3 = {
         "Cache, Solid-state disk and Register",
       ],
       correct: 0,
-      note: "Matches the textbook's “Storage Structure” grouping — Main Memory / Solid-State Disks / Magnetic Disks. Cache is covered separately, not grouped with these three.",
+      note: "Slide 1.36, “Managed by” row: registers are managed by the compiler and cache by hardware. Main memory, solid-state disk and magnetic disk are managed by the operating system.",
     },
     {
       q: "Which of the following statements is true? (disk surface structure)",
@@ -960,7 +969,7 @@ const FILE3 = {
         "Disk surface is physically divided into tracks, which are subdivided into sectors",
       ],
       correct: 1,
-      note: "This is the exact textbook phrasing (Silberschatz, Mass-Storage Structure chapter) — tracks/sectors are described as a logical division of the surface.",
+      note: "Slide 1.17 says exactly this: “Disk surface is logically divided into tracks, which are subdivided into sectors.”",
     },
     {
       q: "In message passing model of Cooperating processes, IPC may be blocking or non-blocking, or combinations of both. If both send and receive are blocking, we have a __________.",
@@ -978,6 +987,16 @@ const FILE3 = {
       ],
       correct: 0,
     },
+    {
+      q: "Any mechanism for controlling access of processes or users to resources defined by the OS is called",
+      options: ["Security", "Protection", "Confidential", "privileged escalation"],
+      correct: 1,
+    },
+    {
+      q: "In ________ paradigm for cooperating processes, producer process produces information that is consumed by a consumer process, places no practical limit on the size of the buffer.",
+      options: ["Unbounded buffer", "Bounded buffer", "Producer bounder buffer", "Producer unbounded buffer", "Consumer bounder buffer", "Consumer unbounded buffer"],
+      correct: 0,
+    },
   ],
 };
 
@@ -988,6 +1007,69 @@ const ALL_DECK = {
   meta: "All three quizzes back to back",
   questions: [].concat(FILE1.questions, FILE2.questions, FILE3.questions),
 };
+
+const NOT_ON_SLIDES = "Not on the slides · comes from the textbook";
+const REFS = {
+  haifa: [
+    "Ch1 · slide 1.10",
+    "Ch1 · slide 1.10",
+    "Ch1 · slide 1.33",
+    "Ch3 · slide 3.19",
+    "Ch3 · slides 3.19, 3.21 (worked out from the code)",
+  ],
+  set2: [
+    "Ch3 · slides 3.45, 3.47",
+    "Ch3 · slide 3.10",
+    NOT_ON_SLIDES,
+    "Ch3 · slide 3.13",
+    "Ch1 · slide 1.31",
+    "Ch1 · slide 1.38",
+    "Ch1 · slide 1.6",
+    NOT_ON_SLIDES,
+    "Ch1 · slide 1.17",
+    "Ch3 · slide 3.21",
+    "Ch1 · slides 1.14, 1.16",
+    "Ch1 · slide 1.35",
+    "Ch1 · slide 1.9",
+    "Ch1 · slide 1.7",
+    "Ch3 · slides 3.19, 3.21",
+    "Ch3 · slides 3.16, 3.17",
+  ],
+  sohail: [
+    "Ch3 · slide 3.29",
+    "Ch1 · slide 1.14",
+    "Ch3 · slide 3.5",
+    "Ch3 · slides 3.16, 3.17",
+    "Ch1 · slide 1.38",
+    "Ch1 · slide 1.38",
+    "Ch1 · slide 1.27",
+    "Ch3 · slides 3.21 to 3.24",
+    "Ch1 · slide 1.36",
+    "Ch1 · slide 1.36",
+    "Ch1 · slide 1.14",
+    "Ch3 · slide 3.24",
+    "Ch1 · slide 1.23",
+    "Ch3 · slide 3.26",
+    "Ch3 · slide 3.47",
+    "Ch3 · slide 3.4",
+    "Ch3 · slide 3.4",
+    "Ch3 · slide 3.4",
+    NOT_ON_SLIDES,
+    "Ch3 · slide 3.26",
+    "Ch1 · slide 1.6",
+    "Ch3 · slide 3.10",
+    "Ch3 · slide 3.4",
+    "Ch3 · slide 3.25",
+    "Ch3 · slide 3.25",
+    "Ch1 · slide 1.36",
+    "Ch1 · slide 1.17",
+    "Ch3 · slide 3.41",
+    "Ch3 · slide 3.41",
+    "Ch1 · slide 1.38",
+    "Ch3 · slide 3.29",
+  ],
+};
+DECKS.forEach(deck => deck.questions.forEach((q, i) => { q.ref = REFS[deck.id][i]; }));
 
 /* ============================== STATE ============================== */
 
@@ -1012,6 +1094,7 @@ const els = {
   options: document.getElementById("options"),
   noteBox: document.getElementById("noteBox"),
   noteText: document.getElementById("noteText"),
+  refLine: document.getElementById("refLine"),
   nextBtn: document.getElementById("nextBtn"),
   summaryDeckName: document.getElementById("summaryDeckName"),
   finalScore: document.getElementById("finalScore"),
@@ -1182,6 +1265,7 @@ function renderQuestion(){
   });
 
   els.noteBox.hidden = true;
+  els.refLine.hidden = true;
   els.nextBtn.disabled = true;
   els.nextBtn.textContent = state.pos === total - 1 ? "Finish →" : "Next →";
 
@@ -1232,6 +1316,8 @@ function lockOptions(pickedIdx){
     els.noteText.textContent = q.note;
     els.noteBox.hidden = false;
   }
+  els.refLine.textContent = "course ref · " + q.ref;
+  els.refLine.hidden = false;
 }
 
 els.nextBtn.addEventListener("click", () => {
